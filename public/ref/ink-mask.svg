@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000">
+  <!-- alpha mask: white = film visible. A turbulence-displaced blob gives
+       the ragged ink-splat edge; small satellites read as flung droplets -->
+  <defs>
+    <filter id="ink" x="-60%" y="-60%" width="220%" height="220%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="4" seed="7" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="320" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </defs>
+  <g fill="#fff" filter="url(#ink)">
+    <circle cx="500" cy="500" r="235"/>
+    <circle cx="770" cy="430" r="34"/>
+    <circle cx="720" cy="660" r="26"/>
+    <circle cx="300" cy="290" r="30"/>
+    <circle cx="245" cy="620" r="22"/>
+    <circle cx="560" cy="215" r="24"/>
+    <circle cx="430" cy="790" r="28"/>
+  </g>
+</svg>

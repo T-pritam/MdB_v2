@@ -1,0 +1,163 @@
+"use client";
+
+import { useRef, useState } from "react";
+import { gsap, useGSAP } from "@/lib/gsap";
+import { introWillPlay, markIntroDone } from "@/lib/intro";
+import { getLenis } from "@/lib/scroll";
+
+/**
+ * Full sequence budget, in seconds:
+ *   0.00 - 0.50  hold on black
+ *   0.50 - 1.21  letters in (last char starts 0.86, runs 0.35)
+ *   1.21 - 1.56  flip to cream and charcoal
+ *   1.56 - 1.81  overlay fades out, Hero already handed off
+ * Total 1.81s.
+ */
+const HOLD = 0.5;
+const CHAR_STAGGER = 0.03;
+const CHAR_DURATION = 0.35;
+const FLIP_DURATION = 0.35;
+const FADE_DURATION = 0.25;
+
+/** The overlay is true black, deliberately outside the brand palette: it is a
+ *  pre-site moment, and the cream reads brighter arriving from #000. */
+const BLACK = "#000000";
+/** The wordmark's landing colour. Must stay the site's ink so it matches the
+ *  Hero wordmark it hands off to. */
+const INK = "#1A1613";
+const CREAM = "#FAF8F4";
+
+/** Matches Hero's h1 exactly. Any drift here shows as a jump at handoff. */
+const WORDMARK =
+  "font-display text-[clamp(3rem,7vw,6.5rem)] font-medium uppercase leading-[1.05] tracking-[0.05em]";
+
+function Chars({ word }: { word: string }) {
+  return (
+    <>
+      {word.split("").map((c, i) => (
+        <span key={`${word}-${i}`} className="intro-char inline-block">
+          {c}
+        </span>
+      ))}
+    </>
+  );
+}
+
+export default function Preloader() {
+  // Starts mounted to match the server render, then the pre-paint effect below
+  // either runs the sequence or removes it before anything is shown.
+  const [mounted, setMounted] = useState(true);
+  const overlay = useRef<HTMLDivElement>(null);
+  const mark = useRef<HTMLDivElement>(null);
+
+  useGSAP(() => {
+    const el = overlay.current;
+    const wordmark = mark.current;
+    if (!el || !wordmark) return;
+
+    const root = document.documentElement;
+
+    const release = () => {
+      root.classList.remove("intro-lock");
+      const lenis = getLenis();
+      lenis?.start();
+      lenis?.resize();
+      markIntroDone();
+    };
+
+    // Returning visitor in this session, or reduced motion: skip to the end.
+    // markIntroDone still fires so the Hero plays its normal entrance.
+    if (!introWillPlay()) {
+      markIntroDone();
+      setMounted(false);
+      return;
+    }
+
+    // A reload mid-page would otherwise restore scroll behind the overlay and
+    // put the Hero wordmark offscreen when we measure it.
+    window.scrollTo(0, 0);
+    root.classList.add("intro-lock");
+    getLenis()?.stop();
+
+    // Measured once, at the moment the flip tween starts, so the Hero has its
+    // final layout. Cached because scale changes the rect we read from.
+    let placement: { dx: number; dy: number; scale: number } | null = null;
+    const place = () => {
+      if (placement) return placement;
+      const target = document.querySelector<HTMLElement>(".hero-wordmark");
+      const from = wordmark.getBoundingClientRect();
+      if (!target || !from.width) {
+        placement = { dx: 0, dy: 0, scale: 1 };
+        return placement;
+      }
+      const to = target.getBoundingClientRect();
+      placement = {
+        dx: to.left + to.width / 2 - (from.left + from.width / 2),
+        dy: to.top + to.height / 2 - (from.top + from.height / 2),
+        scale: to.width / from.width,
+      };
+      return placement;
+    };
+
+    const tl = gsap.timeline({ onComplete: () => setMounted(false) });
+
+    tl.set(".intro-char", { opacity: 0, yPercent: 45 })
+      // Letters arrive left to right after the hold.
+      .to(
+        ".intro-char",
+        {
+          opacity: 1,
+          yPercent: 0,
+          duration: CHAR_DURATION,
+          ease: "power2.out",
+          stagger: CHAR_STAGGER,
+        },
+        HOLD
+      )
+      .addLabel("flip")
+      // Background, colour and position move as one gesture: the wordmark
+      // settles into the place the Hero's own wordmark already occupies.
+      .to(el, { backgroundColor: CREAM, duration: FLIP_DURATION, ease: "power1.inOut" }, "flip")
+      .to(wordmark, { color: INK, duration: FLIP_DURATION, ease: "power1.inOut" }, "flip")
+      .to(
+        wordmark,
+        {
+          x: () => place().dx,
+          y: () => place().dy,
+          scale: () => place().scale,
+          duration: FLIP_DURATION,
+          ease: "power2.inOut",
+        },
+        "flip"
+      )
+      // Hand off with no pause. Underneath is cream on cream and a wordmark at
+      // the same size, colour and position, so the crossfade is invisible.
+      .call(release)
+      .to(el, { opacity: 0, duration: FADE_DURATION, ease: "power1.out" });
+
+    return () => {
+      root.classList.remove("intro-lock");
+    };
+  }, []);
+
+  if (!mounted) return null;
+
+  return (
+    <div
+      ref={overlay}
+      // aria-hidden plus a live-region-free overlay: the Hero underneath is the
+      // real content, and it is already in the accessibility tree.
+      aria-hidden="true"
+      className="fixed inset-0 z-[70] flex items-center justify-center px-6"
+      style={{ backgroundColor: BLACK }}
+    >
+      <div ref={mark} className={WORDMARK} style={{ color: CREAM }}>
+        <Chars word="Maison" />{" "}
+        <em className="lowercase italic">
+          <Chars word="de" />
+        </em>{" "}
+        <Chars word="Build" />
+      </div>
+    </div>
+  );
+}

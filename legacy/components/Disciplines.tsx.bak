@@ -1,0 +1,172 @@
+"use client";
+
+import { useRef } from "react";
+import { gsap, useGSAP } from "@/lib/gsap";
+import { prefersReducedMotion } from "@/hooks/useReducedMotion";
+
+const ICON_PROPS = {
+  width: 28,
+  height: 28,
+  viewBox: "0 0 28 28",
+  fill: "none",
+  stroke: "#1A1613",
+  strokeWidth: 1.5,
+  strokeLinecap: "round" as const,
+  strokeLinejoin: "round" as const,
+  "aria-hidden": true,
+};
+
+const DISCIPLINES = [
+  {
+    title: "Strength",
+    body: "Progressive programming, guided by those who compete.",
+    icon: (
+      // A barbell drawn in a single line weight
+      <svg {...ICON_PROPS}>
+        <line x1="4" y1="14" x2="24" y2="14" />
+        <line x1="7" y1="9" x2="7" y2="19" />
+        <line x1="21" y1="9" x2="21" y2="19" />
+      </svg>
+    ),
+  },
+  {
+    title: "Nourishment",
+    body: "Nutrition considered as carefully as training.",
+    icon: (
+      // A grain leaf
+      <svg {...ICON_PROPS}>
+        <path d="M14 24 C14 16 14 10 14 4" />
+        <path d="M14 10 C10 10 7 8 6 4 C10 4 13 6 14 10" />
+        <path d="M14 16 C18 16 21 14 22 10 C18 10 15 12 14 16" />
+      </svg>
+    ),
+  },
+  {
+    title: "Recovery",
+    body: "The discipline of rest, done properly.",
+    icon: (
+      // A still wave
+      <svg {...ICON_PROPS}>
+        <path d="M3 14 C6 10 9 10 12 14 C15 18 18 18 21 14 C22.5 12 24 11.5 25 12" />
+      </svg>
+    ),
+  },
+  {
+    title: "Guidance",
+    body: "Private counsel with Rushil and senior coaches.",
+    icon: (
+      // A compass mark
+      <svg {...ICON_PROPS}>
+        <circle cx="14" cy="14" r="10" />
+        <path d="M18 10 L15.5 15.5 L10 18 L12.5 12.5 Z" />
+      </svg>
+    ),
+  },
+];
+
+const HEAD_REVEAL = {
+  opacity: 0,
+  y: 30,
+  duration: 1.2,
+  ease: "power2.out",
+  stagger: 0.15,
+} as const;
+
+export default function Disciplines() {
+  const ref = useRef<HTMLElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+
+  useGSAP(
+    () => {
+      const mm = gsap.matchMedia();
+
+      // Stacked layout: narrow viewports and anyone who asked for less motion.
+      // Horizontal panning is where scroll hijacking actually hurts on touch,
+      // so small screens keep the plain grid and a simple stagger.
+      mm.add("(max-width: 1023px), (prefers-reduced-motion: reduce)", () => {
+        if (prefersReducedMotion()) return;
+
+        gsap.from(".discipline-head", {
+          ...HEAD_REVEAL,
+          scrollTrigger: { trigger: ref.current, start: "top 65%" },
+        });
+        gsap.from(".discipline-card", {
+          ...HEAD_REVEAL,
+          duration: 1.1,
+          scrollTrigger: { trigger: ".discipline-track", start: "top 75%" },
+        });
+      });
+
+      // Pinned horizontal pan: the four pursuits read as a timeline the
+      // visitor moves through, rather than four tiles seen at once.
+      mm.add("(min-width: 1024px) and (prefers-reduced-motion: no-preference)", () => {
+        const track = trackRef.current;
+        if (!track) return;
+
+        // Measured in a function so ScrollTrigger re-reads it on refresh
+        // instead of baking in the width at first paint.
+        const distance = () => Math.max(0, track.scrollWidth - window.innerWidth);
+
+        gsap.from(".discipline-head", {
+          ...HEAD_REVEAL,
+          scrollTrigger: { trigger: ref.current, start: "top 70%" },
+        });
+
+        gsap.to(track, {
+          x: () => -distance(),
+          ease: "none",
+          scrollTrigger: {
+            trigger: ref.current,
+            start: "top top",
+            end: () => `+=${distance()}`,
+            pin: true,
+            scrub: 1,
+            invalidateOnRefresh: true,
+          },
+        });
+      });
+
+      // Explicit teardown: the pin adds spacer markup and a ScrollTrigger that
+      // must not survive a hot reload or unmount.
+      return () => mm.revert();
+    },
+    { scope: ref }
+  );
+
+  return (
+    <section
+      ref={ref}
+      aria-label="The disciplines"
+      className="section-pad relative bg-cream lg:flex lg:h-[100dvh] lg:flex-col lg:justify-center lg:overflow-hidden lg:py-0"
+    >
+      <div className="content-wrap">
+        <p className="discipline-head label text-accent">The Disciplines</p>
+        <h2 className="discipline-head mt-6 font-display text-[clamp(2rem,4vw,3.5rem)] font-normal leading-[1.15] tracking-[0.01em] text-ink">
+          Four pursuits
+        </h2>
+      </div>
+
+      <div
+        ref={trackRef}
+        className="discipline-track mx-auto mt-16 grid w-full max-w-[var(--content-max-width)] grid-cols-1 gap-8 px-[var(--content-padding)] md:grid-cols-2 lg:mx-0 lg:mt-20 lg:flex lg:w-max lg:max-w-none lg:gap-16 lg:pr-[18vw]"
+      >
+        {DISCIPLINES.map((d) => (
+          <article
+            key={d.title}
+            className="discipline-card rounded-[4px] border border-line bg-card p-10 transition-[border-color,transform] duration-300 ease-out hover:-translate-y-0.5 hover:border-[#F2662A40] lg:flex lg:min-h-[400px] lg:w-[clamp(340px,32vw,460px)] lg:shrink-0 lg:flex-col lg:justify-between lg:p-12"
+          >
+            {d.icon}
+            <div className="mt-8 lg:mt-0">
+              <h3 className="font-display text-2xl font-normal text-ink">
+                {d.title}
+              </h3>
+              <p className="mt-3 font-body text-[0.9375rem] font-light leading-[1.7] text-body">
+                {d.body}
+              </p>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}

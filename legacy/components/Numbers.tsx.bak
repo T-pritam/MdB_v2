@@ -1,0 +1,69 @@
+"use client";
+
+import { useRef } from "react";
+import { gsap, useGSAP } from "@/lib/gsap";
+import { prefersReducedMotion } from "@/hooks/useReducedMotion";
+
+const STATS = [
+  { value: 150, label: "Members" },
+  { value: 15, label: "Years of craft" },
+  { value: 4, label: "Coaches" },
+  { value: 1, label: "Standard" },
+];
+
+export default function Numbers() {
+  const ref = useRef<HTMLElement>(null);
+
+  useGSAP(
+    () => {
+      if (prefersReducedMotion()) return;
+
+      const numbers = gsap.utils.toArray<HTMLElement>(".stat-number");
+      numbers.forEach((el) => {
+        const value = Number(el.dataset.value);
+        gsap.fromTo(
+          el,
+          { textContent: 0 },
+          {
+            textContent: value,
+            duration: 1.8,
+            ease: "power1.out",
+            snap: { textContent: 1 },
+            scrollTrigger: { trigger: ref.current, start: "top 65%" },
+          }
+        );
+      });
+
+      gsap.from(".stat-block", {
+        opacity: 0,
+        y: 30,
+        duration: 1.2,
+        ease: "power2.out",
+        stagger: 0.12,
+        scrollTrigger: { trigger: ref.current, start: "top 65%" },
+      });
+    },
+    { scope: ref }
+  );
+
+  return (
+    <section ref={ref} aria-label="In numbers" className="section-pad bg-cream">
+      <div className="content-wrap">
+        <div className="grid grid-cols-1 gap-16 text-center sm:grid-cols-2 lg:grid-cols-4">
+          {STATS.map((stat) => (
+            <div key={stat.label} className="stat-block flex flex-col items-center">
+              <span
+                className="stat-number font-display text-[clamp(3rem,6vw,5.5rem)] font-normal leading-none text-ink"
+                data-value={stat.value}
+              >
+                {stat.value}
+              </span>
+              <span className="mt-6 h-px w-10 bg-accent" aria-hidden="true" />
+              <span className="label mt-6 text-muted">{stat.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}

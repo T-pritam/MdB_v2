@@ -1,0 +1,129 @@
+"use client";
+
+import dynamic from "next/dynamic";
+import { useEffect, useRef, useState } from "react";
+import { gsap, useGSAP } from "@/lib/gsap";
+import { prefersReducedMotion } from "@/hooks/useReducedMotion";
+import { introWillPlay, onIntroDone } from "@/lib/intro";
+
+const Scene3D = dynamic(() => import("./Scene3D"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-full items-center justify-center">
+      <div className="arc-fallback spinning" />
+    </div>
+  ),
+});
+
+export default function Hero() {
+  const ref = useRef<HTMLElement>(null);
+  // Entrance fade and scroll drift live on separate elements: if both target
+  // the same node, the scrub tween captures opacity 0 as its start value
+  // while the entrance tween is mid-flight, and scrolling pins it invisible.
+  const sceneOuterRef = useRef<HTMLDivElement>(null);
+  const sceneDriftRef = useRef<HTMLDivElement>(null);
+  const [mountScene, setMountScene] = useState(false);
+
+  // Only mount WebGL on desktop, and only once the hero is in view
+  useEffect(() => {
+    if (window.innerWidth < 768) return;
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setMountScene(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.1 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  useGSAP(
+    () => {
+      if (prefersReducedMotion()) return;
+
+      // The one page-load animation: caption, wordmark, sub-line rise in.
+      // When the intro plays it owns the wordmark and hands it over already in
+      // position, so the entrance holds until then and leaves the wordmark be.
+      const withIntro = introWillPlay();
+      const tl = gsap.timeline({
+        paused: withIntro,
+        defaults: { ease: "power2.out" },
+      });
+
+      if (withIntro) {
+        gsap.set(".hero-wordmark", { opacity: 0 });
+        tl.set(".hero-wordmark", { opacity: 1 }, 0);
+      } else {
+        tl.from(".hero-wordmark", { opacity: 0, y: 20, duration: 1.2 }, 0.2);
+      }
+
+      tl.from(".hero-rise", {
+        opacity: 0,
+        y: 20,
+        duration: 1.2,
+        stagger: 0.4,
+      }, 0);
+      tl.from(sceneOuterRef.current, { opacity: 0, duration: 1.0 }, 0.4);
+      tl.from(".hero-indicator", { opacity: 0, duration: 0.8 }, 1.0);
+
+      if (withIntro) onIntroDone(() => tl.play());
+
+      // As the hero scrolls away, the object drifts up and fades
+      gsap.to(sceneDriftRef.current, {
+        y: -60,
+        opacity: 0,
+        ease: "power1.inOut",
+        scrollTrigger: {
+          trigger: ref.current,
+          start: "top top",
+          end: "70% top",
+          scrub: true,
+        },
+      });
+    },
+    { scope: ref }
+  );
+
+  return (
+    <section
+      id="top"
+      ref={ref}
+      aria-label="Maison de Build"
+      className="relative flex min-h-[100dvh] flex-col items-center justify-center bg-cream px-6 text-center"
+    >
+      <div
+        ref={sceneOuterRef}
+        className="relative hidden h-[380px] w-[min(82vw,560px)] md:mb-10 md:block"
+        aria-hidden="true"
+      >
+        <div ref={sceneDriftRef} className="absolute inset-0">
+          {mountScene && <Scene3D />}
+        </div>
+      </div>
+
+      <p className="hero-rise label text-muted">EST. 2024 — HYDERABAD</p>
+
+      <h1 className="hero-wordmark mt-6 font-display text-[clamp(3rem,7vw,6.5rem)] font-medium uppercase leading-[1.05] tracking-[0.05em] text-ink">
+        Maison <em className="lowercase italic">de</em> Build
+      </h1>
+
+      <p className="hero-rise mt-5 pb-1 font-display text-xl italic leading-[1.4] text-body">
+        The art of building
+      </p>
+
+      <div
+        className="hero-indicator absolute bottom-10 left-1/2 -translate-x-1/2"
+        aria-hidden="true"
+      >
+        <div className="relative h-10 w-px bg-ink/60">
+          <div className="scroll-dot absolute -left-[1.5px] top-0 h-1 w-1 rounded-full bg-ink" />
+        </div>
+      </div>
+    </section>
+  );
+}

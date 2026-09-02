@@ -1,0 +1,90 @@
+"use client";
+
+import Image from "next/image";
+import { useRef } from "react";
+import { gsap, useGSAP } from "@/lib/gsap";
+import { prefersReducedMotion } from "@/hooks/useReducedMotion";
+
+const STATS = ["12,000 SQ FT", "EST. 2024", "HYDERABAD"];
+
+export default function Space() {
+  const ref = useRef<HTMLElement>(null);
+
+  useGSAP(
+    () => {
+      if (prefersReducedMotion()) return;
+
+      // Whisper parallax: the image travels at a fraction of scroll speed
+      gsap.fromTo(
+        ".space-image",
+        { yPercent: -8 },
+        {
+          yPercent: 8,
+          ease: "none",
+          scrollTrigger: {
+            trigger: ref.current,
+            start: "top bottom",
+            end: "bottom top",
+            scrub: true,
+          },
+        }
+      );
+
+      gsap.from(".space-rise", {
+        opacity: 0,
+        y: 30,
+        duration: 1.2,
+        ease: "power2.out",
+        stagger: 0.15,
+        scrollTrigger: {
+          trigger: ref.current,
+          start: "top 55%",
+        },
+      });
+    },
+    { scope: ref }
+  );
+
+  return (
+    <section
+      ref={ref}
+      aria-label="The space"
+      className="relative flex min-h-[100dvh] items-center overflow-hidden bg-ink"
+    >
+      <div className="space-image absolute -inset-y-[10%] inset-x-0">
+        <Image
+          src="/textures/gym-interior.jpg"
+          alt="The Maison de Build training hall at night, warm light over dark equipment"
+          fill
+          sizes="100vw"
+          className="object-cover"
+        />
+      </div>
+      <div className="absolute inset-0 bg-[rgba(26,22,19,0.45)]" aria-hidden="true" />
+
+      <div className="content-wrap section-pad relative z-10 w-full">
+        <div className="max-w-xl">
+          <p className="space-rise label text-accent">The Space</p>
+          <h2 className="space-rise mt-6 font-display text-[clamp(2rem,4vw,3.5rem)] font-normal leading-[1.15] tracking-[0.01em] text-cream">
+            Where craft has a home
+          </h2>
+          <p className="space-rise mt-8 max-w-lg font-body text-[1.0625rem] font-light leading-[1.7] text-cream/85">
+            Twelve thousand square feet, considered down to the last detail. A
+            space built for those who take the work seriously.
+          </p>
+        </div>
+
+        <div className="mt-16 flex flex-col gap-10 sm:flex-row sm:gap-16">
+          {STATS.map((stat) => (
+            <div key={stat} className="space-rise">
+              <div className="mb-4 h-px w-6 bg-accent" aria-hidden="true" />
+              <p className="font-body text-sm font-normal uppercase tracking-[0.2em] text-cream">
+                {stat}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}

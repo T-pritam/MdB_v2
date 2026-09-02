@@ -1,0 +1,58 @@
+import { prefersReducedMotion } from "@/hooks/useReducedMotion";
+
+/**
+ * Coordination between the Preloader and whatever needs to wait for it.
+ * Kept out of both components so neither has to import the other.
+ */
+
+const SESSION_KEY = "mdb-intro-played";
+
+let done = false;
+const waiting: Array<() => void> = [];
+
+/** sessionStorage throws in some privacy modes; a failed read just means the
+ *  intro plays, which is the safe direction to fail in. */
+function played(): boolean {
+  // Dev convenience: replay the full sequence on every reload rather than
+  // needing sessionStorage cleared by hand between iterations. The flag is
+  // still written, so only this read is bypassed. Production is unchanged,
+  // and NODE_ENV is inlined at build time so this branch is dropped there.
+  if (process.env.NODE_ENV === "development") return false;
+
+  try {
+    return window.sessionStorage.getItem(SESSION_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * True when the full intro should run. Server-side this returns true so the
+ * markup ships with the overlay present, avoiding a flash of the Hero before
+ * the client decides. The client corrects it before paint.
+ */
+export function introWillPlay(): boolean {
+  if (typeof window === "undefined") return true;
+  if (done) return false;
+  return !played() && !prefersReducedMotion();
+}
+
+export function markIntroDone() {
+  if (done) return;
+  done = true;
+  try {
+    window.sessionStorage.setItem(SESSION_KEY, "1");
+  } catch {
+    // Nothing to do: the intro replays next load, which is acceptable.
+  }
+  waiting.splice(0).forEach((fn) => fn());
+}
+
+/** Fires immediately if the intro is already finished or was never going to run. */
+export function onIntroDone(cb: () => void) {
+  if (done) {
+    cb();
+    return;
+  }
+  waiting.push(cb);
+}

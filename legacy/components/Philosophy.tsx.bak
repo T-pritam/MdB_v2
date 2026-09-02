@@ -1,0 +1,60 @@
+"use client";
+
+import { useRef } from "react";
+import { gsap, useGSAP } from "@/lib/gsap";
+import { prefersReducedMotion } from "@/hooks/useReducedMotion";
+
+const LINES = [
+  "We do not build bodies.",
+  "We build discipline.",
+  "We build craft.",
+  "We build a way of living.",
+];
+
+export default function Philosophy() {
+  const ref = useRef<HTMLElement>(null);
+
+  useGSAP(
+    () => {
+      if (prefersReducedMotion()) return;
+
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: ref.current,
+          start: "top 60%",
+        },
+        defaults: { ease: "power2.out" },
+      });
+
+      tl.from(".mask-inner", {
+        yPercent: 110,
+        duration: 1.2,
+        stagger: 0.18,
+      });
+      tl.from(".philosophy-line", { scaleX: 0, duration: 1.0 }, "-=0.4");
+    },
+    { scope: ref }
+  );
+
+  return (
+    <section
+      ref={ref}
+      aria-label="Philosophy"
+      className="section-pad flex min-h-[100dvh] flex-col items-center justify-center bg-cream px-6"
+    >
+      <div className="flex flex-col items-center gap-3 text-center md:gap-4">
+        {LINES.map((line) => (
+          <div key={line} className="mask-line pb-1">
+            <p className="mask-inner font-display text-[clamp(2.5rem,4vw,4rem)] font-normal leading-[1.2] text-ink">
+              {line}
+            </p>
+          </div>
+        ))}
+      </div>
+      <div
+        className="philosophy-line mt-14 h-px w-20 origin-center bg-accent"
+        aria-hidden="true"
+      />
+    </section>
+  );
+}

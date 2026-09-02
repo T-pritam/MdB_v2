@@ -1,0 +1,38 @@
+import { NextResponse } from "next/server";
+import { z } from "zod";
+
+const enquirySchema = z.object({
+  fullName: z.string().min(2),
+  telephone: z.string().refine((value) => {
+    const digits = value.replace(/\D/g, "");
+    return digits.length >= 7 && digits.length <= 15;
+  }),
+  interest: z.enum([
+    "Strength",
+    "Aesthetics",
+    "Longevity",
+    "Competition",
+    "Simply curious",
+  ]),
+  note: z.string().optional(),
+});
+
+export async function POST(request: Request) {
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ success: false, error: "Invalid JSON" }, { status: 400 });
+  }
+
+  const parsed = enquirySchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { success: false, error: parsed.error.flatten() },
+      { status: 400 }
+    );
+  }
+
+  console.log("New enquiry:", parsed.data);
+  return NextResponse.json({ success: true });
+}

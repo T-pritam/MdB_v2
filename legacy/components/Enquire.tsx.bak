@@ -1,0 +1,243 @@
+"use client";
+
+import { useRef, useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { gsap, useGSAP } from "@/lib/gsap";
+import { prefersReducedMotion } from "@/hooks/useReducedMotion";
+import MagneticButton from "./MagneticButton";
+
+const enquirySchema = z.object({
+  fullName: z.string().min(2, "Please share your full name."),
+  telephone: z
+    .string()
+    .refine((value) => {
+      const digits = value.replace(/\D/g, "");
+      return digits.length >= 7 && digits.length <= 15;
+    }, "Please enter a valid telephone number."),
+  interest: z.enum([
+    "Strength",
+    "Aesthetics",
+    "Longevity",
+    "Competition",
+    "Simply curious",
+  ]),
+  note: z.string().optional(),
+});
+
+type EnquiryValues = z.infer<typeof enquirySchema>;
+
+export default function Enquire() {
+  const ref = useRef<HTMLElement>(null);
+  const formWrapRef = useRef<HTMLDivElement>(null);
+  const [submitted, setSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<EnquiryValues>({
+    resolver: zodResolver(enquirySchema),
+    defaultValues: { interest: "Strength" },
+  });
+
+  useGSAP(
+    () => {
+      if (prefersReducedMotion()) return;
+      gsap.from(".enquire-rise", {
+        opacity: 0,
+        y: 30,
+        duration: 1.2,
+        ease: "power2.out",
+        stagger: 0.12,
+        scrollTrigger: { trigger: ref.current, start: "top 60%" },
+      });
+    },
+    { scope: ref }
+  );
+
+  const showSuccess = () => {
+    if (prefersReducedMotion() || !formWrapRef.current) {
+      setSubmitted(true);
+      return;
+    }
+    gsap.to(formWrapRef.current, {
+      opacity: 0,
+      y: -20,
+      duration: 0.7,
+      ease: "power2.out",
+      onComplete: () => {
+        setSubmitted(true);
+        // The replacement message and its orange line ease in
+        requestAnimationFrame(() => {
+          gsap.from(".enquire-success > *", {
+            opacity: 0,
+            y: 20,
+            duration: 1.0,
+            ease: "power2.out",
+            stagger: 0.15,
+          });
+          gsap.from(".enquire-success-line", {
+            scaleX: 0,
+            duration: 1.0,
+            ease: "power2.out",
+            delay: 0.3,
+          });
+        });
+      },
+    });
+  };
+
+  const onSubmit = async (values: EnquiryValues) => {
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(values),
+      });
+      if (!res.ok) throw new Error("Request failed");
+      showSuccess();
+    } catch {
+      // Keep the form visible; a quiet inline note is enough
+      setSubmitError(true);
+    }
+  };
+
+  return (
+    <section
+      id="enquire"
+      ref={ref}
+      aria-label="Enquire"
+      className="section-pad flex min-h-[100dvh] items-center bg-cream"
+    >
+      <div className="mx-auto w-full max-w-[480px] px-6">
+        {!submitted ? (
+          <div ref={formWrapRef}>
+            <h2 className="enquire-rise text-center font-display text-[clamp(2rem,4vw,3.5rem)] font-normal leading-[1.15] tracking-[0.01em] text-ink">
+              Begin the conversation
+            </h2>
+            <p className="enquire-rise mt-5 text-center font-body text-[1.0625rem] font-light leading-[1.7] text-body">
+              Leave your details. We will be in touch.
+            </p>
+
+            <form
+              onSubmit={handleSubmit(onSubmit)}
+              className="enquire-rise mt-14 flex flex-col gap-9"
+              noValidate
+            >
+              <div>
+                <label htmlFor="fullName" className="label block text-muted">
+                  Full name
+                </label>
+                <input
+                  id="fullName"
+                  type="text"
+                  autoComplete="name"
+                  className="underline-input mt-2"
+                  {...register("fullName")}
+                />
+                {errors.fullName && (
+                  <p className="mt-2 font-body text-xs text-accent-hover" role="alert">
+                    {errors.fullName.message}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="telephone" className="label block text-muted">
+                  Telephone
+                </label>
+                <input
+                  id="telephone"
+                  type="tel"
+                  autoComplete="tel"
+                  className="underline-input mt-2"
+                  {...register("telephone")}
+                />
+                {errors.telephone && (
+                  <p className="mt-2 font-body text-xs text-accent-hover" role="alert">
+                    {errors.telephone.message}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="interest" className="label block text-muted">
+                  What draws you here?
+                </label>
+                <select
+                  id="interest"
+                  className="underline-input mt-2 appearance-none bg-transparent"
+                  {...register("interest")}
+                >
+                  <option>Strength</option>
+                  <option>Aesthetics</option>
+                  <option>Longevity</option>
+                  <option>Competition</option>
+                  <option>Simply curious</option>
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="note" className="label block text-muted">
+                  A note (optional)
+                </label>
+                <textarea
+                  id="note"
+                  rows={2}
+                  className="underline-input mt-2 resize-none"
+                  {...register("note")}
+                />
+              </div>
+
+              <MagneticButton className="mt-2 w-full">
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full rounded-[2px] bg-accent px-8 py-4 font-body text-sm font-normal tracking-[0.06em] text-cream transition-colors duration-300 hover:bg-accent-hover disabled:opacity-60"
+                >
+                  {isSubmitting ? "Sending" : "Enquire"}
+                </button>
+              </MagneticButton>
+
+              {submitError && (
+                <p className="text-center font-body text-xs text-accent-hover" role="alert">
+                  Something went astray. Please try again.
+                </p>
+              )}
+            </form>
+          </div>
+        ) : (
+          <div className="enquire-success flex flex-col items-center text-center">
+            <p className="font-display text-[clamp(1.75rem,3vw,2.5rem)] font-normal leading-[1.3] text-ink">
+              Thank you. We will be in touch.
+            </p>
+            <div
+              className="enquire-success-line mt-8 h-px w-10 origin-center bg-accent"
+              aria-hidden="true"
+            />
+          </div>
+        )}
+
+        <div className="enquire-rise mt-16 flex items-center justify-center gap-10">
+          <a
+            href="https://wa.me/91XXXXXXXXXX"
+            className="font-body text-xs uppercase tracking-[0.2em] text-muted transition-colors duration-300 hover:text-ink"
+          >
+            WhatsApp +91 XXXXXXXXXX
+          </a>
+          <a
+            href="https://instagram.com/maisondebuild"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-body text-xs uppercase tracking-[0.2em] text-muted transition-colors duration-300 hover:text-ink"
+          >
+            Instagram @maisondebuild
+          </a>
+        </div>
+      </div>
+    </section>
+  );
+}

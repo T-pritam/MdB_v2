@@ -1,0 +1,85 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { gsap } from "@/lib/gsap";
+import { prefersReducedMotion } from "@/hooks/useReducedMotion";
+
+export default function CustomCursor() {
+  const [enabled, setEnabled] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (window.matchMedia("(pointer: fine)").matches && !prefersReducedMotion()) {
+      setEnabled(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!enabled) return;
+    const el = ref.current;
+    if (!el) return;
+
+    document.documentElement.classList.add("custom-cursor-active");
+
+    const pos = { x: -100, y: -100 };
+    const target = { x: -100, y: -100 };
+    let visible = false;
+
+    const onMove = (e: MouseEvent) => {
+      target.x = e.clientX;
+      target.y = e.clientY;
+      if (!visible) {
+        pos.x = target.x;
+        pos.y = target.y;
+        visible = true;
+        el.style.opacity = "1";
+      }
+    };
+
+    const tick = () => {
+      pos.x += (target.x - pos.x) * 0.18;
+      pos.y += (target.y - pos.y) * 0.18;
+      el.style.transform = `translate(${pos.x}px, ${pos.y}px) translate(-50%, -50%)`;
+    };
+    gsap.ticker.add(tick);
+
+    const isInteractive = (node: EventTarget | null) =>
+      node instanceof Element &&
+      node.closest("a, button, [role='button'], input, textarea, select, label") !== null;
+
+    const onOver = (e: MouseEvent) => {
+      if (isInteractive(e.target)) el.classList.add("cursor-hovering");
+    };
+    const onOut = (e: MouseEvent) => {
+      if (isInteractive(e.target)) el.classList.remove("cursor-hovering");
+    };
+    const onLeave = () => {
+      el.style.opacity = "0";
+      visible = false;
+    };
+
+    window.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseover", onOver);
+    document.addEventListener("mouseout", onOut);
+    document.documentElement.addEventListener("mouseleave", onLeave);
+
+    return () => {
+      document.documentElement.classList.remove("custom-cursor-active");
+      gsap.ticker.remove(tick);
+      window.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseover", onOver);
+      document.removeEventListener("mouseout", onOut);
+      document.documentElement.removeEventListener("mouseleave", onLeave);
+    };
+  }, [enabled]);
+
+  if (!enabled) return null;
+
+  return (
+    <div
+      ref={ref}
+      aria-hidden="true"
+      className="custom-cursor pointer-events-none fixed left-0 top-0 z-[80] opacity-0"
+    />
+  );
+}
