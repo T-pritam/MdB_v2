@@ -15,10 +15,15 @@ import Wordmark from "./Wordmark";
  * stopped + body overflow hidden) and the full-screen gate appears:
  * pane 1 collects name and mobile, pane 2 takes a six-digit code.
  *
- * MOCK MODE: no SMS is sent and any six digits verify. The developer
- * handoff comments below mark exactly where Firebase Phone Auth plugs
- * in. On unlock a 90-day token lands in localStorage; a valid token
- * skips the gate entirely on later visits.
+ * The backend lives in this app:
+ *   POST /api/gate/send-otp   { name, phone } → { status: "sent" | "verified" }
+ *   POST /api/gate/verify-otp { phone, otp }  → { status: "verified" } | { error }
+ * A phone already verified in the website_leads table returns
+ * status "verified" from send-otp, so the OTP pane is skipped and the
+ * gate unlocks straight away.
+ *
+ * On unlock a 90-day token lands in localStorage; a valid token skips
+ * the gate entirely on later visits.
  *
  * Cream, Montserrat, no shadows, no gradients, no close button — the
  * only way through is the form. prefers-reduced-motion shows and hides
@@ -36,8 +41,12 @@ export default function ScrollGate() {
   const [phone, setPhone] = useState("");
   const [nameError, setNameError] = useState(false);
   const [phoneError, setPhoneError] = useState(false);
+  const [detailsError, setDetailsError] = useState("");
+  const [sending, setSending] = useState(false);
   const [otp, setOtp] = useState<string[]>(Array(6).fill(""));
-  const [otpError] = useState(false); // never set in mock mode; real in production
+  const [otpError, setOtpError] = useState("");
+  const [verifying, setVerifying] = useState(false);
+  const [resending, setResending] = useState(false);
 
   const overlayRef = useRef<HTMLDivElement>(null);
   const boxRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -121,25 +130,81 @@ export default function ScrollGate() {
   }, [gateOpen]);
 
   // ── Pane 1: details ──────────────────────────────────────────────
-  const submitDetails = () => {
+  const submitDetails = async () => {
     const nameOk = fullName.trim().length > 0;
-    const digits = phone.replace(/[\s-]/g, "");
+    const digits = phone.replace(/\D/g, "");
     const phoneOk = /^\d{10}$/.test(digits);
     setNameError(!nameOk);
     setPhoneError(!phoneOk);
-    if (!nameOk || !phoneOk) return;
+    setDetailsError("");
+    if (!nameOk || !phoneOk || sending) return;
 
-    // DEVELOPER HANDOFF — replace console.log with your lead capture call here.
-    // Payload: { fullName: string, phone: string, timestamp: ISO string }
-    // This fires before OTP is sent. Wire to your backend or Firebase here.
-    console.log("[MdB gate] lead", {
-      fullName: fullName.trim(),
-      phone: `+91${digits}`,
-      timestamp: new Date().toISOString(),
-    });
-
+    setSending(true);
     setPhone(digits);
-    setPane("otp");
+    try {
+      const res = await fetch("/api/gate/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: fullName.trim(), phone: digits }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        status?: string;
+        error?: string;
+      };
+
+      if (!res.ok || (data.status !== "sent" && data.status !== "verified")) {
+        setDetailsError(
+          data.error === "sms_failed"
+            ? "We couldn't send the code. Please try again."
+            : "Something went wrong. Please try again."
+        );
+        return;
+      }
+
+      if (data.status === "verified") {
+        // Known, already-verified number — no code needed.
+        unlockAndStore(digits);
+        return;
+      }
+
+      setOtp(Array(6).fill(""));
+      setOtpError("");
+      setPane("otp");
+    } catch {
+      setDetailsError("Network error. Please try again.");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const resendOtp = async () => {
+    if (resending || sending) return;
+    const digits = phone.replace(/\D/g, "");
+    if (!/^\d{10}$/.test(digits)) return;
+    setResending(true);
+    setOtpError("");
+    try {
+      const res = await fetch("/api/gate/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: fullName.trim(), phone: digits }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { status?: string };
+      if (data.status === "verified") {
+        unlockAndStore(digits);
+        return;
+      }
+      if (!res.ok || data.status !== "sent") {
+        setOtpError("Couldn't resend the code. Try again.");
+        return;
+      }
+      setOtp(Array(6).fill(""));
+      boxRefs.current[0]?.focus();
+    } catch {
+      setOtpError("Couldn't resend the code. Try again.");
+    } finally {
+      setResending(false);
+    }
   };
 
   // ── Pane 2: OTP boxes ────────────────────────────────────────────
@@ -169,13 +234,14 @@ export default function ScrollGate() {
 
   const otpComplete = otp.every((d) => /^\d$/.test(d));
 
-  const unlockAndStore = () => {
+  const unlockAndStore = (phoneOverride?: string) => {
+    const digits = (phoneOverride ?? phone).replace(/\D/g, "");
     const now = new Date();
     const expires = new Date(now.getTime() + TOKEN_DAYS * 24 * 60 * 60 * 1000);
     localStorage.setItem(
       STORAGE_KEY,
       JSON.stringify({
-        phone: `+91${phone}`,
+        phone: `+91${digits}`,
         verifiedAt: now.toISOString(),
         expiresAt: expires.toISOString(),
       })
@@ -198,12 +264,7 @@ export default function ScrollGate() {
     });
   };
 
-  // DEVELOPER HANDOFF — OTP verification stub.
-  // Replace this block with Firebase Phone Auth confirmationResult.confirm(otp).
-  // On Firebase success: call unlockAndStore() below.
-  // On Firebase failure: show the inline error message below the boxes.
-  // ENV VARS NEEDED: NEXT_PUBLIC_FIREBASE_API_KEY, AUTH_DOMAIN, PROJECT_ID.
-  const verify = () => {
+  const verify = async () => {
     // iOS only honours DeviceOrientationEvent.requestPermission() when it is
     // called synchronously inside a user gesture. The VERIFY tap is the one
     // gesture every first-time visitor performs, so the request rides on it
@@ -212,9 +273,43 @@ export default function ScrollGate() {
     if (window.matchMedia("(max-width: 767px)").matches) {
       requestGyroFromGesture();
     }
-    if (!otpComplete) return;
-    // Mock mode: any six digits pass.
-    unlockAndStore();
+    if (!otpComplete || verifying) return;
+
+    setVerifying(true);
+    setOtpError("");
+    try {
+      const res = await fetch("/api/gate/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone: phone.replace(/\D/g, ""),
+          otp: otp.join(""),
+        }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        status?: string;
+        error?: string;
+      };
+
+      if (data.status === "verified") {
+        unlockAndStore();
+        return;
+      }
+
+      const messages: Record<string, string> = {
+        mismatch: "That code didn't match. Try again.",
+        expired: "That code has expired. Request a new one.",
+        locked: "Too many attempts. Request a new code.",
+        not_found: "Please start again with your number.",
+      };
+      setOtpError(
+        messages[data.error ?? ""] ?? "Couldn't verify the code. Try again."
+      );
+    } catch {
+      setOtpError("Network error. Please try again.");
+    } finally {
+      setVerifying(false);
+    }
   };
 
   if (pane === "cleared" || pane === "armed") return null;
@@ -267,9 +362,12 @@ export default function ScrollGate() {
                   type="tel"
                   inputMode="numeric"
                   autoComplete="tel-national"
+                  maxLength={10}
                   className="underline-input mt-2"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={(e) =>
+                    setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))
+                  }
                 />
               </div>
               {phoneError && (
@@ -282,10 +380,17 @@ export default function ScrollGate() {
             <button
               type="button"
               onClick={submitDetails}
-              className="label mt-12 bg-orange px-10 py-4 text-ink transition-opacity duration-300 hover:opacity-85"
+              disabled={sending}
+              className="label mt-12 bg-orange px-10 py-4 text-ink transition-opacity duration-300 hover:opacity-85 disabled:opacity-40"
             >
-              Continue
+              {sending ? "Sending…" : "Continue"}
             </button>
+
+            {detailsError && (
+              <p className="label mt-4 text-stone" role="alert">
+                {detailsError}
+              </p>
+            )}
           </>
         )}
 
@@ -317,23 +422,35 @@ export default function ScrollGate() {
 
             {otpError && (
               <p className="label mt-4 text-stone" role="alert">
-                That code didn&apos;t match. Try again.
+                {otpError}
               </p>
             )}
 
             <button
               type="button"
               onClick={verify}
-              disabled={!otpComplete}
+              disabled={!otpComplete || verifying}
               className="label mt-12 bg-orange px-10 py-4 text-ink transition-opacity duration-300 hover:opacity-85 disabled:opacity-35"
             >
-              Verify
+              {verifying ? "Verifying…" : "Verify"}
             </button>
 
             <button
               type="button"
-              onClick={() => setPane("details")}
-              className="label mt-6 text-stone transition-colors duration-300 hover:text-ink"
+              onClick={resendOtp}
+              disabled={resending}
+              className="label mt-6 text-stone transition-colors duration-300 hover:text-ink disabled:opacity-50"
+            >
+              {resending ? "Resending…" : "Resend code"}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setOtpError("");
+                setPane("details");
+              }}
+              className="label mt-4 text-stone transition-colors duration-300 hover:text-ink"
             >
               ← Change number
             </button>
