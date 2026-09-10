@@ -67,7 +67,7 @@ const DISCIPLINES = [
   { name: "HIIT", img: "hiit" },
   { name: "BOXING", img: "boxing" },
   { name: "YOGA", img: "yoga" },
-  { name: "PILATES", img: "2" },
+  { name: "PILATES", img: "pilates" },
   { name: "STEAM & SAUNA", img: "sauna" },
   { name: "SPA", img: "spa" },
   { name: "GAMING", img: "games-room" },
