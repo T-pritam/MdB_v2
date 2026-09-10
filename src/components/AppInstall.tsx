@@ -19,8 +19,10 @@ const PhoneFrames = dynamic(() => import("./PhoneFrames"), { ssr: false });
  * WebGL context is lost. While the scene loads, the phone slot is
  * reserved empty space at the correct dimensions.
  *
- * Store links are placeholders until the listings exist — client to supply.
+ * Both store buttons link to the production downloads page.
  */
+
+const APP_DOWNLOAD_URL = "https://maisondebuild.com/downloads";
 
 export default function AppInstall() {
   const ref = useRef<HTMLElement>(null);
@@ -262,12 +264,22 @@ export default function AppInstall() {
         </div>
 
         <div className="app-rise mt-14 flex flex-wrap justify-center gap-5">
-          <span className="label inline-block border border-cream/30 px-8 py-4 text-cream">
+          <a
+            href={APP_DOWNLOAD_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="label inline-block border border-cream/30 px-8 py-4 text-cream"
+          >
             App Store
-          </span>
-          <span className="label inline-block border border-cream/30 px-8 py-4 text-cream">
+          </a>
+          <a
+            href={APP_DOWNLOAD_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="label inline-block border border-cream/30 px-8 py-4 text-cream"
+          >
             Google Play
-          </span>
+          </a>
         </div>
       </div>
     </section>

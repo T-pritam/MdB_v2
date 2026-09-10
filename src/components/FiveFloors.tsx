@@ -22,28 +22,28 @@ import { makeCounterRoll } from "@/lib/counterRoll";
 const FLOORS = [
   {
     number: "G",
-    name: "FIFTH ELEMENT CAFÉ",
-    body: "Real food. Honest macros. Coffee worth staying for.",
+    name: "FIFTH ELEMENT CAFÉ + IV LOUNGE",
+    body: "Nourishment, recovery and rituals designed for the way you live.",
   },
   {
     number: "01",
     name: "PERFORMANCE & COMBAT",
-    body: "Bags. Ring. Turf. Sleds, rigs and competition-grade combat kit. Train like you mean it.",
+    body: "A floor for performance, combat and everything that demands more from the body.",
   },
   {
     number: "02",
     name: "CARDIO & RECOVERY",
-    body: "Precision cardio. Steam, sauna, cold plunge and infrared. A relaxation lounge and locker rooms worth arriving early for.",
+    body: "A floor for cardio, recovery and everything that restores what movement demands.",
   },
   {
     number: "03",
     name: "STRENGTH",
-    body: "Free weights, plate-loaded and selectorised. The best iron money can specify. Nothing flexes. Nothing rattles.",
+    body: "A floor for strength, conditioning and everything that builds lasting capacity.",
   },
   {
     number: "04",
     name: "YOGA, PILATES & GAMING",
-    body: "Reformer and mat, led by teachers people follow across cities. Gaming next door — because recovery isn't only physical.",
+    body: "A floor for mobility, balance, focus and everything that brings the body and mind into alignment.",
   },
 ];
 
@@ -237,11 +237,11 @@ export default function FiveFloors() {
               block, so the only break is between the two sentences —
               never mid-phrase. */}
           <h2 className="floors-headline font-normal leading-[1.05] tracking-[-0.025em] text-[clamp(2rem,4.5vw,4.25rem)]">
-            <span className="block sm:inline">Four floors.</span>{" "}
-            <span className="block sm:inline">Zero compromise.</span>
+            <span className="block sm:inline">Four Floors.</span>{" "}
+            <span className="block sm:inline">Five distinct experiences.</span>
           </h2>
           <p className="floors-sub type-body mx-auto mt-5 max-w-[38ch]">
-            One address. Five distinct experiences.
+            One address. Zero compromise
           </p>
         </div>
       </div>

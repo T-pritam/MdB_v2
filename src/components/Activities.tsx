@@ -989,16 +989,16 @@ export default function Activities() {
     >
       <div className="content-wrap">
         <Reveal>
-          <p className="label text-orange">Beyond the Iron</p>
+          <p className="label text-orange">THE FULL PRACTICE</p>
         </Reveal>
         <Reveal delay={0.06}>
           <h2 className="type-title mt-6 max-w-[16ch]">
-            More than one kind of work.
+            Different disciplines. One complete practice.
           </h2>
         </Reveal>
         <Reveal delay={0.12}>
           <p className="type-body mt-8 max-w-[46ch]">
-            Recover. Compete. Play. The floor is only the beginning.
+            Movement, recovery, nourishment, play and restoration, brought together under one considered approach to well-being.
           </p>
         </Reveal>
 

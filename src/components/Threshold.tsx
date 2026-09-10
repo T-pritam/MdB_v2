@@ -215,14 +215,14 @@ export default function Threshold() {
       </h1>
 
       <p className="threshold-rise label mt-9 text-cream">
-        ICONIC BUILD · ICONIC STRENGTH
+        MOVE | RESET | RETURN
       </p>
 
-      <p className="threshold-rise type-subhead mt-6">A house, not a gym.</p>
+      <p className="threshold-rise type-subhead mt-6">A HOUSE OF MOVEMENT, RECOVERY AND RITUAL</p>
 
       {/* The surviving manifesto line, folded in from the deleted section. */}
       <p className="threshold-rise type-body mt-6 max-w-[34ch] text-cream">
-        We are the place you defend who you have already become.
+        Where every space, system and experience is considered to help you train with intention & recover with purpose
       </p>
 
       <div

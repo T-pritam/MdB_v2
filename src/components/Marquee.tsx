@@ -16,7 +16,7 @@ import { prefersReducedMotion } from "@/hooks/useReducedMotion";
  * static at x = 0.
  */
 
-const WORDS = ["BUILD", "RETURN", "MAINTAIN"];
+const WORDS = ["INTELLIGENT", "DISCIPLINED", "VITAL"];
 const TRACK = Array(6).fill(WORDS).flat() as string[];
 
 const BASE = 70; // px/s resting drift

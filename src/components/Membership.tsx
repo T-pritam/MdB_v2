@@ -91,7 +91,7 @@ const TIERS: Tier[] = [
     floors: ALL_IN,
     bullets: [
       "All four floors. Every hour.",
-      "Personal training included — Trainer, L1 Coach or L2 Coach.",
+      "Personal training included — Trainer, Coach or Director.",
       "Our lowest coin rates, with earn-back.",
       "Priority booking, priority waitlist, two guest passes a month.",
     ],
@@ -306,7 +306,7 @@ export default function Membership() {
           <div className="mt-8 border border-ink/15 p-10 md:p-12">
             <p className="label">Personal Training</p>
             <p className="data mt-5 text-sm">
-              01 Personal Trainer · 02 L1 Coach · 03 L2 Coach
+              01 Personal Trainer · 02 Coach · 03 Director
             </p>
             <p className="mt-4 max-w-[52ch] text-[1.0625rem] leading-[1.6]">
               Included with Coach. Available as an add-on on every other

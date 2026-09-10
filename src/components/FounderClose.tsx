@@ -55,16 +55,18 @@ export default function FounderClose() {
             reserved-bay facts it carried live in Membership already. */}
         <blockquote className="mt-16">
           <p className="founder-rise type-subhead max-w-[30ch]">
-            I did not build this house to be liked. I built it to hold a
-            standard I refused to lower.
+            Fifteen years of coaching taught me that longevity is built through
+            repetition. You return. You pay attention. You keep going.
           </p>
           <p className="founder-rise type-body mt-8 max-w-[46ch]">
-            Fifteen years of coaching taught me one thing: the people who last
-            return.
+            Maison de Build is built around that simple idea.
           </p>
           <p className="founder-rise type-body mt-6 max-w-[46ch]">
-            If you are the person who returns, the door is open. If you are
-            not yet, it will still be here when you are.
+            A place to train well, recover well and maintain what matters.
+          </p>
+          <p className="founder-rise type-body mt-6 max-w-[46ch]">
+            If you are someone who returns, you already understand what this
+            house is for.
           </p>
           <footer className="founder-rise mt-10">
             <p className="text-base text-stone">— Rushil, Founder</p>
@@ -72,7 +74,7 @@ export default function FounderClose() {
         </blockquote>
 
         <p className="founder-rise label mt-20 text-stone">
-          ICONIC BUILD · ICONIC STRENGTH
+          MOVE | RESET | RETURN
         </p>
         <p className="founder-rise data mt-4 text-sm text-stone">EST. de 2026</p>
       </div>

@@ -15,13 +15,13 @@ export const metadata: Metadata = {
   // Absolute base for OG/Twitter images — WhatsApp link previews resolve
   // against this, and WhatsApp is the distribution channel for this site.
   metadataBase: new URL("https://mdb-phase1-v2-staging-pamd.vercel.app"),
-  title: "Maison de Build — A house, not a gym.",
+  title: "Maison de Build — A HOUSE OF MOVEMENT, RECOVERY AND RITUAL",
   description:
-    "A private house of training. Members only. Four floors. Zero compromise. B Block, Kavuri Hills, Hyderabad.",
+    "Four Floors. Five distinct experiences. One address. Zero compromise",
   openGraph: {
-    title: "Maison de Build — A house, not a gym.",
+    title: "Maison de Build — A HOUSE OF MOVEMENT, RECOVERY AND RITUAL",
     description:
-      "A private house of training. Members only. Four floors. Zero compromise. B Block, Kavuri Hills, Hyderabad.",
+      "Four Floors. Five distinct experiences. One address. Zero compromise",
     images: ["/og-image.jpg"],
   },
 };

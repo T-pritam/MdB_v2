@@ -30,11 +30,11 @@ import { prefersReducedMotion } from "@/hooks/useReducedMotion";
    cut. Copy is draft, not client-approved. */
 const BEATS = [
   {
-    kicker: "THE STANDARD",
+    kicker: "THE PRACTISE",
     video: "beat1",
     headline: "There is one way this house works.",
     body: [
-      "You arrive. You train. Someone watches. The work is written down.",
+      "You arrive. Your place is known. Your practice continues. Every detail is considered, every session remembered.",
     ],
   },
   {
@@ -42,7 +42,7 @@ const BEATS = [
     video: "beat2",
     headline: "Look around. Nothing here is trying to get your attention.",
     body: [
-      "No screens counting down. No leaderboards on the wall. The floor is quiet because quiet is the correct condition for work.",
+      "Considered spaces, uninterrupted focus and room to do what brought you here.",
     ],
   },
   {
@@ -50,7 +50,7 @@ const BEATS = [
     video: "beat4",
     headline: "You are not checked in. You are recognised.",
     body: [
-      "Your bay is where you left it. Your coach knows what you lifted last.",
+      "Your coach knows your history, your progress and what your practice requires next.",
     ],
   },
 ];
